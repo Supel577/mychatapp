@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Friends Adda</title>
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        html, body { height: 100%; overflow: hidden; background-color: #ece5dd; touch-action: none; }
+        
+        .app-container { display: flex; flex-direction: column; height: 100vh; height: 100dvh; max-width: 600px; margin: 0 auto; background-color: #fff; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        /* Headers */
+        .header { background-color: #075E54; color: white; padding: 10px 15px; display: flex; align-items: center; gap: 12px; z-index: 10; height: 60px; }
+        .header h1 { font-size: 20px; font-weight: 500; flex: 1; text-transform: capitalize; }
+        .back-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; display: none; padding-right: 5px; }
+        .logout-btn { background: none; border: none; color: white; font-size: 14px; cursor: pointer; text-decoration: underline; }
+        
+        .avatar { width: 40px; height: 40px; background-color: #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 20px; color: white; font-weight: bold; text-transform: uppercase; }
+        
+        .chat-header-info { display: flex; flex-direction: column; flex: 1; }
+        .chat-header-info h2 { font-size: 16px; font-weight: 500; text-transform: capitalize; }
+        .status { font-size: 12px; color: #d1d1d1; }
+        .status.online { color: #25D366; font-weight: bold; }
+
+        /* Screens */
+        .screen { display: none; flex-direction: column; height: calc(100% - 60px); background-color: #ece5dd; }
+        .screen.active { display: flex; }
+
+        /* Auth Screen */
+        #auth-screen { background: #fff; justify-content: center; align-items: center; padding: 20px; height: 100%; overflow-y: auto; }
+        .auth-box { width: 100%; max-width: 320px; text-align: center; }
+        .auth-box h2 { color: #075E54; margin-bottom: 5px; font-size: 24px; }
+        .auth-box p { font-size: 14px; color: #666; margin-bottom: 20px; }
+        .auth-box input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; outline: none; }
+        .auth-box input:focus { border-color: #075E54; }
+        .auth-btn { width: 100%; padding: 12px; background: #075E54; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .toggle-auth { color: #075E54; font-size: 14px; cursor: pointer; text-decoration: underline; margin-top: 10px; display: inline-block; }
+        .error { color: red; font-size: 13px; margin-bottom: 10px; display: none; background: #ffe6e6; padding: 8px; border-radius: 5px; }
+
+        /* Home Screen */
+        .search-bar { padding: 10px; background: #f6f6f6; border-bottom: 1px solid #ddd; display: flex; gap: 10px; }
+        .search-bar input { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ccc; outline: none; font-size: 15px; }
+        .search-bar button { padding: 8px 15px; border-radius: 20px; border: none; background: #075E54; color: white; cursor: pointer; }
+        
+        .chat-list { flex: 1; overflow-y: auto; background: #fff; }
+        .chat-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; gap: 15px; }
+        .chat-item:hover { background: #f9f9f9; }
+        .chat-item-details { flex: 1; overflow: hidden; }
+        .chat-item-name { font-size: 16px; font-weight: 500; text-transform: capitalize; color: #000; }
+        .chat-item-lastmsg { font-size: 14px; color: #666; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Chat Screen */
+        .chat-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .message-wrapper { display: flex; flex-direction: column; cursor: pointer; }
+        .message { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 15px; position: relative; line-height: 1.4; word-wrap: break-word; }
+        .msg-received { background-color: #ffffff; align-self: flex-start; border-top-left-radius: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .msg-sent { background-color: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .msg-time { font-size: 10px; color: rgba(0,0,0,0.45); display: block; text-align: right; margin-top: 4px; }
+        .msg-deleted { font-style: italic; color: #888; }
+
+        /* Footer Input */
+        .footer { background-color: #f0f0f0; padding: 10px; display: flex; align-items: center; gap: 10px; }
+        .input-box { flex: 1; background-color: #ffffff; border-radius: 25px; padding: 12px 15px; border: none; outline: none; font-size: 16px; }
+        .send-btn { background-color: #008f68; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .send-btn svg { width: 20px; height: 20px; fill: white; margin-left: 2px; }
+
+        /* Modal for Options */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 50; display: none; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 80%; max-width: 300px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .modal-option { padding: 15px 20px; font-size: 16px; border-bottom: 1px solid #eee; cursor: pointer; color: #333; }
+        .modal-option:active { background: #f0f0f0; }
+        .modal-option.danger { color: #d32f2f; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header" id="main-header" style="display: none;">
+            <button class="back-btn" id="backBtn">❮</button>
+            <div class="avatar" id="chatAvatar" style="display: none;">U</div>
+            <div class="chat-header-info">
+                <h1 id="headerTitle">Friends Adda</h1>
+                <span class="status" id="chatStatus"></span>
+            </div>
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </div>
+
+        <!-- Auth Screen (Login/Register) -->
+        <div id="auth-screen" class="screen active">
+            <div class="auth-box">
+                <h2>Friends Adda</h2>
+                <p id="authSubtitle">লগইন করুন</p>
+                <div id="authError" class="error"></div>
+                
+                <!-- Registration Fields -->
+                <div id="regFields" style="display: none;">
+                    <input type="text" id="usernameInput" placeholder="ইউজারনেম (যেমন: supel)">
+                </div>
+
+                <!-- Common Fields -->
+                <input type="email" id="emailInput" placeholder="ইমেইল এড্রেস">
+                <input type="password" id="passInput" placeholder="পাসওয়ার্ড">
+                
+                <!-- Reg specific -->
+                <div id="regFieldsPass" style="display: none;">
+                    <input type="password" id="passConfirmInput" placeholder="কনফার্ম পাসওয়ার্ড">
+                </div>
+
+                <button id="authBtn" class="auth-btn">লগইন করুন</button>
+                <span id="toggleAuth" class="toggle-auth">অ্যাকাউন্ট নেই? নতুন খুলুন</span>
+            </div>
+        </div>
+
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="বন্ধুর ইউজারনেম লিখে খুঁজুন...">
+                <button id="searchBtn">সার্চ</button>
+            </div>
+            <div class="chat-list" id="chatList"></div>
+        </div>
+
+        <!-- Chat Screen -->
+        <div id="chat-screen" class="screen">
+            <div class="chat-area" id="chatArea"></div>
+            <div class="footer">
+                <input type="text" id="messageInput" class="input-box" placeholder="মেসেজ লিখুন..." autocomplete="off">
+                <button id="sendBtn" class="send-btn">
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Options Modal -->
+        <div id="optionsModal" class="modal-overlay">
+            <div class="modal-box">
+                <div class="modal-option" id="optCopy">Copy (কপি করুন)</div>
+                <div class="modal-option" id="optForward">Forward (ফরোয়ার্ড করুন)</div>
+                <div class="modal-option danger" id="optDelete">Delete (সবার থেকে মুছুন)</div>
+                <div class="modal-option" id="optCancel" style="text-align: center; background: #eee;">Cancel</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getDatabase, ref, set, get, push, onValue, onChildAdded, update, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBtRqddwpKeq186gKrFAI6ZkunVShJnPWc",
+            authDomain: "what-s-app-929e4.firebaseapp.com",
+            databaseURL: "https://what-s-app-929e4-default-rtdb.firebaseio.com",
+            projectId: "what-s-app-929e4",
+            storageBucket: "what-s-app-929e4.firebasestorage.app",
+            messagingSenderId: "965788385844",
+            appId: "1:965788385844:web:af3607987d41d9b54d4061"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // Variables
+        let isLoginMode = true;
+        let currentUserUid = null;
+        let currentUsername = null;
+        let partnerUid = null;
+        let partnerUsername = null;
+        let currentRoomId = null;
+        let selectedMessageId = null;
+        let selectedMessageText = null;
+
+        // UI Elements
+        const authScreen = document.getElementById('auth-screen');
+        const homeScreen = document.getElementById('home-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const mainHeader = document.getElementById('main-header');
+        const errorDiv = document.getElementById('authError');
+
+        // ================= AUTHENTICATION =================
+        document.getElementById('toggleAuth').addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            document.getElementById('regFields').style.display = isLoginMode ? 'none' : 'block';
+            document.getElementById('regFieldsPass').style.display = isLoginMode ? 'none' : 'block';
+            document.getElementById('authSubtitle').innerText = isLoginMode ? 'লগইন করুন' : 'নতুন অ্যাকাউন্ট খুলুন';
+            document.getElementById('authBtn').innerText = isLoginMode ? 'লগইন করুন' : 'রেজিস্টার করুন';
+            document.getElementById('toggleAuth').innerText = isLoginMode ? 'অ্যাকাউন্ট নেই? নতুন খুলুন' : 'অ্যাকাউন্ট আছে? লগইন করুন';
+            errorDiv.style.display = 'none';
+        });
+
+        document.getElementById('authBtn').addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value.trim();
+            const pass = document.getElementById('passInput').value;
+            errorDiv.style.display = 'none';
+
+            if(!email || !pass) return showError("ইমেইল এবং পাসওয়ার্ড দিন!");
+
+            if(isLoginMode) {
+                // Login
+                try {
+                    document.getElementById('authBtn').innerText = "অপেক্ষা করুন...";
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } catch(e) {
+                    showError("ইমেইল বা পাসওয়ার্ড ভুল হয়েছে!");
+                    document.getElementById('authBtn').innerText = "লগইন করুন";
+                }
+            } else {
+                // Register
+                const uname = document.getElementById('usernameInput').value.trim().toLowerCase();
+                const passConfirm = document.getElementById('passConfirmInput').value;
+
+                if(!/^[a-z0-9_]{3,15}$/.test(uname)) return showError("ইউজারনেম ৩-১৫ অক্ষরের ইংরেজি হতে হবে (স্পেস ছাড়া)।");
+                if(pass !== passConfirm) return showError("পাসওয়ার্ড দুটি মিলেনি!");
+                if(pass.length < 6) return showError("পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে!");
+
+                document.getElementById('authBtn').innerText = "অপেক্ষা করুন...";
+                try {
+                    // Check if username is taken
+                    const unameSnap = await get(ref(db, `usernames/${uname}`));
+                    if(unameSnap.exists()) {
+                        showError("এই ইউজারনেমটি অন্য কেউ নিয়ে নিয়েছে!");
+                        document.getElementById('authBtn').innerText = "রেজিস্টার করুন";
+                        return;
+                    }
+
+                    // Create User
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                    const uid = userCredential.user.uid;
+
+                    // Save Data
+                    await set(ref(db, `users/${uid}`), { username: uname, email: email, status: 'online' });
+                    await set(ref(db, `usernames/${uname}`), uid);
+                    
+                } catch(e) {
+                    showError(e.message);
+                    document.getElementById('authBtn').innerText = "রেজিস্টার করুন";
+                }
+            }
+        });
+
+        function showError(msg) {
+            errorDiv.innerText = msg;
+            errorDiv.style.display = "block";
+        }
+
+        // ================= AUTH STATE OBSERVER =================
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+                // Fetch Username
+                const snap = await get(ref(db, `users/${user.uid}/username`));
+                if(snap.exists()) {
+                    currentUsername = snap.val();
+                    managePresence();
+                    showHome();
+                }
+            } else {
+                // Logged out
+                currentUserUid = null;
+                currentUsername = null;
+                showAuth();
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // ================= PRESENCE (Online/Offline) =================
+        function managePresence() {
+            if(!currentUserUid) return;
+            const connectedRef = ref(db, '.info/connected');
+            const myStatusRef = ref(db, `users/${currentUserUid}/status`);
+
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    onDisconnect(myStatusRef).set('offline');
+                    set(myStatusRef, 'online');
+                }
+            });
+        }
+
+        // ================= NAVIGATION =================
+        function showAuth() {
+            authScreen.classList.add('active');
+            homeScreen.classList.remove('active');
+            chatScreen.classList.remove('active');
+            mainHeader.style.display = 'none';
+        }
+
+        function showHome() {
+            authScreen.classList.remove('active');
+            chatScreen.classList.remove('active');
+            homeScreen.classList.add('active');
+            mainHeader.style.display = 'flex';
+            
+            document.getElementById('backBtn').style.display = 'none';
+            document.getElementById('chatAvatar').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'block';
+            document.getElementById('headerTitle').innerText = `Adda (${currentUsername})`;
+            document.getElementById('chatStatus').innerText = "";
+            
+            loadInbox();
+        }
+
+        // ================= HOME / INBOX =================
+        function loadInbox() {
+            if(!currentUserUid) return;
+            const inboxRef = ref(db, `inbox/${currentUserUid}`);
+            onValue(inboxRef, (snapshot) => {
+                const chatList = document.getElementById('chatList');
+                chatList.innerHTML = '';
+                if(snapshot.exists()) {
+                    const data = snapshot.val();
+                    const sortedChats = Object.keys(data).sort((a,b) => data[b].timestamp - data[a].timestamp);
+                    
+                    sortedChats.forEach(pUid => {
+                        const item = data[pUid];
+                        const div = document.createElement('div');
+                        div.className = 'chat-item';
+                        div.innerHTML = `
+                            <div class="avatar">${item.username.charAt(0)}</div>
+                            <div class="chat-item-details">
+                                <div class="chat-item-name">${item.username}</div>
+                                <div class="chat-item-lastmsg">${item.last_msg}</div>
+                            </div>
+                        `;
+                        div.onclick = () => openChat(pUid, item.username);
+                        chatList.appendChild(div);
+                    });
+                } else {
+                    chatList.innerHTML = `<div style="padding:20px; text-align:center; color:#888;">কোনো চ্যাট নেই। বন্ধুর ইউজারনেম দিয়ে সার্চ করুন।</div>`;
+                }
+            });
+        }
+
+        // Search Username
+        document.getElementById('searchBtn').addEventListener('click', async () => {
+            const searchUname = document.getElementById('searchInput').value.trim().toLowerCase();
+            if(!searchUname || searchUname === currentUsername) return;
+
+            const snap = await get(ref(db, `usernames/${searchUname}`));
+            if(snap.exists()) {
+                const pUid = snap.val();
+                openChat(pUid, searchUname);
+                document.getElementById('searchInput').value = '';
+            } else {
+                alert("এই ইউজারনেমে কাউকে পাওয়া যায়নি!");
+            }
+        });
+
+        // ================= CHAT ROOM =================
+        function getRoomId(uid1, uid2) {
+            return [uid1, uid2].sort().join('_');
+        }
+
+        let currentChatListener = null;
+
+        function openChat(pUid, pUname) {
+            homeScreen.classList.remove('active');
+            chatScreen.classList.add('active');
+            
+            document.getElementById('backBtn').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('chatAvatar').style.display = 'flex';
+            document.getElementById('chatAvatar').innerText = pUname.charAt(0);
+            document.getElementById('headerTitle').innerText = pUname;
+            
+            partnerUid = pUid;
+            partnerUsername = pUname;
+            currentRoomId = getRoomId(currentUserUid, partnerUid);
+
+            document.getElementById('chatArea').innerHTML = '';
+
+            // Status Listener
+            onValue(ref(db, `users/${partnerUid}/status`), (snap) => {
+                const statusDiv = document.getElementById('chatStatus');
+                if(snap.exists() && snap.val() === 'online') {
+                    statusDiv.innerText = "Online";
+                    statusDiv.className = "status online";
+                } else {
+                    statusDiv.innerText = "Offline";
+                    statusDiv.className = "status";
+                }
+            });
+
+            // Load Messages
+            const msgsRef = ref(db, `messages/${currentRoomId}`);
+            onChildAdded(msgsRef, (snapshot) => {
+                displayMessage(snapshot.key, snapshot.val());
+            });
+        }
+
+        document.getElementById('backBtn').addEventListener('click', showHome);
+
+        // Sending Message
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        document.getElementById('messageInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if(text === "" || !currentRoomId) return;
+            input.value = '';
+
+            const msgData = {
+                sender: currentUserUid,
+                text: text,
+                timestamp: Date.now(),
+                timeString: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
+            };
+
+            await push(ref(db, `messages/${currentRoomId}`), msgData);
+
+            // Update Inbox
+            const inboxUpdates = {};
+            inboxUpdates[`inbox/${currentUserUid}/${partnerUid}`] = { last_msg: text, timestamp: msgData.timestamp, username: partnerUsername };
+            inboxUpdates[`inbox/${partnerUid}/${currentUserUid}`] = { last_msg: text, timestamp: msgData.timestamp, username: currentUsername };
+            update(ref(db), inboxUpdates);
+        }
+
+        function displayMessage(msgId, msg) {
+            const chatArea = document.getElementById('chatArea');
+            let wrapper = document.getElementById(`msg-${msgId}`);
+            if(!wrapper) {
+                wrapper = document.createElement('div');
+                wrapper.id = `msg-${msgId}`;
+                wrapper.className = 'message-wrapper';
+                chatArea.appendChild(wrapper);
+            }
+
+            const isMine = msg.sender === currentUserUid;
+
+            if(msg.deleted) {
+                wrapper.innerHTML = `<div class="message ${isMine ? 'msg-sent' : 'msg-received'} msg-deleted">🚫 This message was deleted</div>`;
+                wrapper.onclick = null;
+            } else {
+                wrapper.innerHTML = `
+                    <div class="message ${isMine ? 'msg-sent' : 'msg-received'}">
+                        ${msg.text}
+                        <span class="msg-time">${msg.timeString || ''}</span>
+                    </div>
+                `;
+                wrapper.onclick = () => openOptions(msgId, msg, isMine);
+            }
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // ================= MESSAGE OPTIONS =================
+        const optionsModal = document.getElementById('optionsModal');
+
+        function openOptions(msgId, msg, isMine) {
+            selectedMessageId = msgId;
+            selectedMessageText = msg.text;
+            document.getElementById('optDelete').style.display = isMine ? 'block' : 'none';
+            optionsModal.style.display = 'flex';
+        }
+
+        document.getElementById('optCancel').onclick = () => { optionsModal.style.display = 'none'; };
+
+        document.getElementById('optCopy').onclick = () => {
+            navigator.clipboard.writeText(selectedMessageText);
+            optionsModal.style.display = 'none';
+        };
+
+        document.getElementById('optForward').onclick = async () => {
+            optionsModal.style.display = 'none';
+            const fwdUname = prompt("যাকে পাঠাবেন তার ইউজারনেম লিখুন:");
+            if(fwdUname && fwdUname.trim() !== "") {
+                const snap = await get(ref(db, `usernames/${fwdUname.trim().toLowerCase()}`));
+                if(snap.exists()) {
+                    const tUid = snap.val();
+                    const fRoom = getRoomId(currentUserUid, tUid);
+                    const msgData = { sender: currentUserUid, text: selectedMessageText, timestamp: Date.now(), timeString: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }) };
+                    await push(ref(db, `messages/${fRoom}`), msgData);
+                    
+                    const inboxUpdates = {};
+                    inboxUpdates[`inbox/${currentUserUid}/${tUid}`] = { last_msg: selectedMessageText, timestamp: msgData.timestamp, username: fwdUname };
+                    inboxUpdates[`inbox/${tUid}/${currentUserUid}`] = { last_msg: selectedMessageText, timestamp: msgData.timestamp, username: currentUsername };
+                    update(ref(db), inboxUpdates);
+                    alert("মেসেজ ফরোয়ার্ড করা হয়েছে!");
+                } else {
+                    alert("ইউজার পাওয়া যায়নি!");
+                }
+            }
+        };
+
+        document.getElementById('optDelete').onclick = async () => {
+            if(confirm("মেসেজটি সবার থেকে ডিলিট করতে চান?")) {
+                await update(ref(db, `messages/${currentRoomId}/${selectedMessageId}`), { deleted: true, text: "" });
+                displayMessage(selectedMessageId, { deleted: true, sender: currentUserUid });
+                optionsModal.style.display = 'none';
+                
+                // Also update inbox last message to indicate deletion
+                const inboxUpdates = {};
+                inboxUpdates[`inbox/${currentUserUid}/${partnerUid}/last_msg`] = "🚫 Message deleted";
+                inboxUpdates[`inbox/${partnerUid}/${currentUserUid}/last_msg`] = "🚫 Message deleted";
+                update(ref(db), inboxUpdates);
+            }
+        };
+
+        window.visualViewport.addEventListener("resize", () => {
+            document.body.style.height = window.visualViewport.height + "px";
+        });
+    </script>
+</body>
+</html>
